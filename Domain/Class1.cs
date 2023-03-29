@@ -32,6 +32,7 @@ public enum SituacaoDocumento
 public class Evento : IEntity
 {
     public int Id { get; protected set; }
+    public int UCId { get; protected set; }
     public int? DocumentoId { get; protected set; }
     public string Historico { get; protected set; } = null!;
     public decimal Valor { get; protected set; }
@@ -47,7 +48,27 @@ public class Evento : IEntity
     }
 }
 
+public class PosicaoDebito : AggregateRoot
+{
+    public int Id { get; protected set; }
+    public IList<Evento> EventosFuturos { get; protected set; } = new List<Evento>();
+    public IList<Documento> DocumentosPendentes { get; protected set; } = new List<Documento>();
+    public IList<Documento> DocumentosBaixados { get; protected set; } = new List<Documento>();
+
+    protected PosicaoDebito() { }
+
+    public PosicaoDebito(
+        int ucId)
+    {
+        Id = ucId;
+    }
+}
+
 public interface IEntity
 {
     int Id { get; }
+}
+
+public interface AggregateRoot : IEntity
+{
 }
