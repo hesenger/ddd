@@ -35,6 +35,16 @@ public class Evento : IEntity
     public int? DocumentoId { get; protected set; }
     public string Historico { get; protected set; } = null!;
     public decimal Valor { get; protected set; }
+
+    protected Evento() { }
+
+    public Evento(
+        string historico,
+        decimal valor)
+    {
+        Historico = historico;
+        Valor = valor;
+    }
 }
 
 public interface IEntity

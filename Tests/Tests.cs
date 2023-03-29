@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Domain;
 using FluentNHibernate.Cfg;
 using FluentNHibernate.Cfg.Db;
@@ -28,17 +29,32 @@ public class Tests
 
         new SchemaExport(cfg).Create(false, true, connection);
 
-        using var session = sessionFactory
+        var doc = new Documento(1, DateTime.Today, SituacaoDocumento.AguardandoFaturamento);
+        using (var session = sessionFactory
+            .WithOptions()
+            .Connection(connection)
+            .OpenSession())
+        {
+            var tran = session.BeginTransaction();
+            session.Save(doc);
+
+            doc.Eventos.Add(new Evento("Teste", 22.5m));
+
+            tran.Commit();
+            session.Close();
+        }
+
+        Console.WriteLine("====================================");
+        Console.WriteLine("Session closed");
+        Console.WriteLine("====================================");
+
+        using var session2 = sessionFactory
             .WithOptions()
             .Connection(connection)
             .OpenSession();
 
-        var doc = new Documento(1, DateTime.Today, SituacaoDocumento.AguardandoFaturamento);
-        session.Save(doc);
-
-        session.Close();
-
-        Assert.That(doc.Id, Is.GreaterThan(0));
+        var doc2 = session2.Get<Documento>(doc.Id);
+        Assert.AreEqual(1, doc2.Eventos.Count);
     }
 }
 
@@ -54,7 +70,6 @@ public class DocumentoMap : ClassMap<Documento>
         Map(x => x.Situacao);
         HasMany(x => x.Eventos)
             .KeyColumn("DocumentoId")
-            .Inverse()
             .Cascade.AllDeleteOrphan();
     }
 }
