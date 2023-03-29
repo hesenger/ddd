@@ -17,8 +17,9 @@ public class Tests
                 .Database(MsSqliteConfiguration.Standard
                     .Dialect<CustomSQLiteDialect>()
                     .InMemory()
-                    .ShowSql()
-                    .FormatSql())
+                    // .ShowSql()
+                    // .FormatSql()
+                    )
                 .Mappings(m => m.FluentMappings.AddFromAssemblyOf<Tests>())
                 .BuildConfiguration();
 
@@ -41,7 +42,7 @@ public class Tests
             session.Save(doc);
             session.Save(new Documento(1, DateTime.Today, SituacaoDocumento.Baixado));
             session.Save(new Documento(1, DateTime.Today, SituacaoDocumento.Baixado));
-            doc.Eventos.Add(new Evento("Teste", 22.5m));
+            doc.Eventos.Add(new Evento(1, "Teste", 22.5m));
         });
 
         ExecuteTransactionally(sessionFactory, connection, session =>
@@ -55,16 +56,39 @@ public class Tests
         {
             var posicao = session.Get<PosicaoDebito>(1);
             Assert.That(posicao.DocumentosBaixados, Has.Count.EqualTo(2));
+        });
 
-            var novo = new Documento(1, DateTime.Today, SituacaoDocumento.Pendente);
-            posicao.EventosFuturos.ToList().ForEach(novo.Eventos.Add);
-            posicao.DocumentosPendentes.Add(novo);
+        ExecuteTransactionally(sessionFactory, connection, session =>
+        {
+            var posicao = session.Get<PosicaoDebito>(1);
+            posicao.DocumentosPendentes.Add(new Documento(1, DateTime.Today, SituacaoDocumento.Pendente));
         });
 
         ExecuteTransactionally(sessionFactory, connection, session =>
         {
             var posicao = session.Get<PosicaoDebito>(1);
             Assert.That(posicao.DocumentosPendentes, Has.Count.EqualTo(2));
+        });
+
+        ExecuteTransactionally(sessionFactory, connection, session =>
+        {
+            var posicao = session.Get<PosicaoDebito>(1);
+            posicao.EventosFuturos.Add(new Evento(1, "Teste 1", 9.25m));
+            posicao.EventosFuturos.Add(new Evento(1, "Teste 2", 22.5m));
+        });
+
+        ExecuteTransactionally(sessionFactory, connection, session =>
+        {
+            var posicao = session.Get<PosicaoDebito>(1);
+            Assert.That(posicao.EventosFuturos, Has.Count.EqualTo(2));
+        });
+
+        ExecuteTransactionally(sessionFactory, connection, session =>
+        {
+            var posicao = session.Get<PosicaoDebito>(1);
+            var novo = new Documento(1, DateTime.Today, SituacaoDocumento.Pendente);
+            posicao.EventosFuturos.ToList().ForEach(novo.Eventos.Add);
+            posicao.DocumentosPendentes.Add(novo);
         });
 
         ExecuteTransactionally(sessionFactory, connection, session =>
@@ -128,6 +152,7 @@ public class PosicaoDebitoMap : ClassMap<PosicaoDebito>
 
         HasMany(x => x.EventosFuturos)
             .KeyColumn("UCId")
+            .Where("DocumentoId is null")
             .Cascade.AllDeleteOrphan();
 
         HasMany(x => x.DocumentosPendentes)

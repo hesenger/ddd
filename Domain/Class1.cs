@@ -40,9 +40,11 @@ public class Evento : IEntity
     protected Evento() { }
 
     public Evento(
+        int ucId,
         string historico,
         decimal valor)
     {
+        UCId = ucId;
         Historico = historico;
         Valor = valor;
     }
